@@ -39,6 +39,16 @@ public:
   size_t ColorOffset() const;
   GLsizei ColorSize() const;
   GLsizei ColorLength() const;
+  GLsizei JointIdLength() const;
+  GLsizei JointIdSize() const;
+  size_t JointIdOffset() const;
+  GLsizei JointWeightLength() const;
+  GLsizei JointWeightSize() const;
+  size_t JointWeightOffset() const;
+
+  void DefineJointId(const size_t aOffset, const GLsizei aLength = 4);
+  void DefineJointWeight(const size_t aOffset, const GLsizei aLength = 4);
+
   void Bind();
   void Unbind();
 

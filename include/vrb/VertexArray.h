@@ -8,6 +8,7 @@
 
 #include "vrb/Forward.h"
 #include "vrb/MacroUtils.h"
+#include "Vector4.h"
 
 namespace vrb {
 
@@ -19,6 +20,8 @@ public:
   int GetNormalCount() const;
   int GetUVCount() const;
   int GetColorCount() const;
+  int GetJointWeightsCount() const;
+  int GetJointIdsCount() const;
 
   void SetNormalCount(const int aCount);
 
@@ -29,6 +32,8 @@ public:
   const Vector& GetNormal(const int aIndex) const;
   const Vector& GetUV(const int aIndex) const;
   const Color& GetColor(const int aIndex) const;
+  const Vector4& GetJoints(const int aIndex) const;
+  const Vector4& GetJointWeights(const int aIndex) const;
 
   void SetVertex(const int aIndex, const Vector& aPoint);
   void SetNormal(const int aIndex, const Vector& aNormal);
@@ -39,6 +44,8 @@ public:
   int AppendNormal(const Vector& aNormal);
   int AppendUV(const Vector& aUV);
   int AppendColor(const Color& aUV);
+  int AppendJointWeights(const Vector4& weights);
+  int AppendJoints(const Vector4& ids);
 
   void AddNormal(const int aIndex, const Vector& aNormal);
 

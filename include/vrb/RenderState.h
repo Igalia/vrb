@@ -22,12 +22,17 @@ public:
   GLint AttributeNormal() const;
   GLint AttributeUV() const;
   GLint AttributeColor() const;
+  GLint AttributeJoint() const;
+  GLint AttributeJointWeight() const;
   uint32_t GetLightId() const;
   void ResetLights(const uint32_t aId);
   void AddLight(const Vector& aDirection, const Color& aAmbient, const Color& aDiffuse, const Color& aSpecular);
   void SetMaterial(const Color& aAmbient, const Color& aDiffuse, const Color& aSpecular, const float aSpecularExponent);
   void SetAmbient(const Color& aColor);
   void SetDiffuse(const Color& aColor);
+  void SetJointsMatrices(const float *matrices);
+  uint16_t GetJointsCount() const;
+  void SetJointsCount(const uint16_t jointsCount);
   void GetMaterial(Color& aAmbient, Color& aDiffuse, Color& aSpecular, float& aSpecularExponent) const;
   GLint UVLength() const;
   TexturePtr GetTexture() const;

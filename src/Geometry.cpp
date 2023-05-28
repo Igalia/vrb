@@ -79,10 +79,14 @@ Geometry::UpdateBuffers() {
 
   const bool kHasTextureCoords = m.vertexArray->GetUVCount() > 0;
   const bool kHasColor = m.vertexArray->GetColorCount() > 0;
+  const bool kHasJoints =
+      m.vertexArray->GetJointIdsCount() > 0 && m.vertexArray->GetJointWeightsCount() > 0;
   const GLsizei kPositionSize = m.renderBuffer->PositionSize();
   const GLsizei kNormalSize = m.renderBuffer->NormalSize();
   const GLsizei kUVSize = m.renderBuffer->UVSize();
   const GLsizei kColorSize = m.renderBuffer->ColorSize();
+  const GLsizei kBISize = m.renderBuffer->JointIdSize();
+  const GLsizei kBWSize = m.renderBuffer->JointWeightSize();
 
   VRB_GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, vertexObjectId));
 
@@ -100,13 +104,15 @@ Geometry::UpdateBuffers() {
       VRB_ERROR("Face with only %d vertices:%s", (int32_t)face.vertices.size(), message.c_str());
       continue;
     }
-    const auto vertexIndex = (GLushort)(face.vertices[0] - 1);
-    const auto normalIndex = (GLushort)(face.normals[0] - 1);
-    const auto uvIndex = (GLushort)(kHasTextureCoords ? face.uvs[0] - 1 : -1);
+    auto vertexIndex = (GLushort)(face.vertices[0] - 1);
+    auto normalIndex = (GLushort)(face.normals[0] - 1);
+    auto uvIndex = (GLushort)(kHasTextureCoords ? face.uvs[0] - 1 : -1);
     const Vector& firstVertex = m.vertexArray->GetVertex(vertexIndex);
     const Vector& firstNormal = m.vertexArray->GetNormal(normalIndex);
     const Vector& firstUV = m.vertexArray->GetUV(uvIndex);
     const Color& firstColor = m.vertexArray->GetColor(vertexIndex);
+    const Vector4& firstJointId = m.vertexArray->GetJoints(vertexIndex);
+    const Vector4& firstJointWeight = m.vertexArray->GetJointWeights(vertexIndex);
     for (int ix = 1; ix <= face.vertices.size() - 2; ix++) {
       VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kPositionSize, firstVertex.Data()));
       offset += kPositionSize;
@@ -120,43 +126,74 @@ Geometry::UpdateBuffers() {
         VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kColorSize, firstColor.Data()));
         offset += kColorSize;
       }
+      if (kHasJoints) {
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBISize, firstJointId.Data()));
+        offset += kBISize;
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBWSize, firstJointWeight.Data()));
+        offset += kBWSize;
+      }
       indices.push_back(count);
       count++;
 
-      const Vector v1 = m.vertexArray->GetVertex(face.vertices[ix] - 1);
-      const Vector n1 = m.vertexArray->GetNormal(face.normals[ix] - 1);
+      vertexIndex = (GLushort)(face.vertices[ix] - 1);
+      normalIndex = (GLushort)(face.normals[ix] - 1);
+      uvIndex = (GLushort)(kHasTextureCoords ? face.uvs[ix] - 1 : -1);
+
+      const Vector v1 = m.vertexArray->GetVertex(vertexIndex);
+      const Vector n1 = m.vertexArray->GetNormal(normalIndex);
       VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kPositionSize, v1.Data()));
       offset += kPositionSize;
       VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kNormalSize, n1.Data()));
       offset += kNormalSize;
       if (kHasTextureCoords) {
-        const Vector uv1 = m.vertexArray->GetUV(face.uvs[ix] - 1);
+        const Vector uv1 = m.vertexArray->GetUV(uvIndex);
         VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kUVSize, uv1.Data()));
         offset += kUVSize;
       }
       if (kHasColor) {
-        const Color& color1 = m.vertexArray->GetColor(face.vertices[ix] - 1);
+        const Color& color1 = m.vertexArray->GetColor(vertexIndex);
         VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kColorSize, color1.Data()));
         offset += kColorSize;
+      }
+      if (kHasJoints) {
+        const Vector4 bi = m.vertexArray->GetJoints(vertexIndex);
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBISize, bi.Data()));
+        offset += kBISize;
+
+        const Vector4 bw = m.vertexArray->GetJointWeights(vertexIndex);
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBWSize, bw.Data()));
+        offset += kBWSize;
       }
       indices.push_back(count);
       count++;
 
-      const Vector v2 = m.vertexArray->GetVertex(face.vertices[ix + 1] - 1);
-      const Vector n2 = m.vertexArray->GetNormal(face.normals[ix + 1] - 1);
+      vertexIndex = (GLushort)(face.vertices[ix + 1] - 1);
+      normalIndex = (GLushort)(face.normals[ix + 1] - 1);
+      uvIndex = (GLushort)(kHasTextureCoords ? face.uvs[ix + 1] - 1 : -1);
+      const Vector v2 = m.vertexArray->GetVertex(vertexIndex);
+      const Vector n2 = m.vertexArray->GetNormal(normalIndex);
       VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kPositionSize, v2.Data()));
       offset += kPositionSize;
       VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kNormalSize, n2.Data()));
       offset += kNormalSize;
       if (kHasTextureCoords) {
-        const Vector uv2 = m.vertexArray->GetUV(face.uvs[ix + 1] - 1);
+        const Vector uv2 = m.vertexArray->GetUV(uvIndex);
         VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kUVSize, uv2.Data()));
         offset += kUVSize;
       }
       if (kHasColor) {
-        const Color& color2 = m.vertexArray->GetColor(face.vertices[ix + 1] - 1);
+        const Color& color2 = m.vertexArray->GetColor(vertexIndex);
         VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kColorSize, color2.Data()));
         offset += kColorSize;
+      }
+      if (kHasJoints) {
+        const Vector4 bi = m.vertexArray->GetJoints(vertexIndex);
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBISize, bi.Data()));
+        offset += kBISize;
+
+        const Vector4 bw = m.vertexArray->GetJointWeights(vertexIndex);
+        VRB_GL_CHECK(glBufferSubData(GL_ARRAY_BUFFER, offset, kBWSize, bw.Data()));
+        offset += kBWSize;
       }
       indices.push_back(count);
       count++;
@@ -165,7 +202,6 @@ Geometry::UpdateBuffers() {
 
   VRB_GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexObjectId));
   VRB_GL_CHECK(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLushort) * indices.size(), indices.data()));
-
 
   VRB_GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
   VRB_GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
@@ -263,6 +299,14 @@ Geometry::InitializeGL() {
   }
   if (m.vertexArray->GetColorCount() > 0) {
     m.renderBuffer->DefineColor(definedOffset);
+    definedOffset = m.renderBuffer->ColorOffset() + m.renderBuffer->ColorSize();
+  }
+  if (m.vertexArray->GetJointIdsCount() > 0) {
+    m.renderBuffer->DefineJointId(definedOffset);
+    definedOffset = m.renderBuffer->JointIdOffset() + m.renderBuffer->JointIdSize();
+  }
+  if (m.vertexArray->GetJointWeightsCount() > 0) {
+    m.renderBuffer->DefineJointWeight(definedOffset);
   }
   GLuint vertexObjectId = 0;
   GLuint indexObjectId = 0;

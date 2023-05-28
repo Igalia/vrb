@@ -8,6 +8,7 @@
 #include "vrb/ConcreteClass.h"
 #include "vrb/Color.h"
 #include "vrb/Vector.h"
+#include "vrb/Vector4.h"
 
 #include <vector>
 
@@ -27,6 +28,8 @@ struct VertexArray::State {
   std::vector<NormalState> normals;
   std::vector<Vector> uvs;
   std::vector<Color> colors;
+  std::vector<Vector4> joints;
+  std::vector<Vector4> jointsWeights;
 };
 
 VertexArrayPtr
@@ -52,6 +55,16 @@ VertexArray::GetUVCount() const {
 int
 VertexArray::GetColorCount() const {
   return m.colors.size();
+}
+
+int
+VertexArray::GetJointWeightsCount() const {
+  return m.jointsWeights.size();
+}
+
+int
+VertexArray::GetJointIdsCount() const {
+  return m.joints.size();
 }
 
 void
@@ -107,13 +120,28 @@ VertexArray::GetUV(const int aIndex) const {
   return m.uvs[aIndex];
 }
 
-
 const Color&
 VertexArray::GetColor(const int aIndex) const {
   if (aIndex >= m.colors.size()) {
     return Color::Zero();
   }
   return m.colors[aIndex];
+}
+
+const Vector4&
+VertexArray::GetJoints(const int aIndex) const {
+  if (aIndex >= m.joints.size()) {
+    return Vector4::Zero();
+  }
+  return m.joints[aIndex];
+}
+
+const Vector4&
+VertexArray::GetJointWeights(const int aIndex) const {
+  if (aIndex >= m.jointsWeights.size()) {
+    return Vector4::Zero();
+  }
+  return m.jointsWeights[aIndex];
 }
 
 void
@@ -182,6 +210,18 @@ int
 VertexArray::AppendColor(const Color& aColor) {
   m.colors.push_back(aColor);
   return m.colors.size() - 1;
+}
+
+int
+VertexArray::AppendJointWeights(const Vector4& weights) {
+  m.jointsWeights.push_back(weights);
+  return m.jointsWeights.size() - 1;
+}
+
+int
+VertexArray::AppendJoints(const Vector4& ids) {
+  m.joints.push_back(ids);
+  return m.joints.size() - 1;
 }
 
 VertexArray::VertexArray(State& aState, CreationContextPtr& aContext) : m(aState) {}

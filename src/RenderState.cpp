@@ -58,6 +58,7 @@ struct RenderState::State : public ResourceGL::State {
   GLint uModel;
   GLint uUVTransform;
   GLint uLightCount;
+  GLint uJointMatrices;
   ULight uLights[VRB_MAX_LIGHTS];
   GLint uMatterialAmbient;
   GLint uMatterialDiffuse;
@@ -69,6 +70,8 @@ struct RenderState::State : public ResourceGL::State {
   GLint aNormal;
   GLint aUV;
   GLint aColor;
+  GLint aJointId;
+  GLint aJointWeight;
   std::vector<Light> lights;
   Color ambient;
   Color diffuse;
@@ -81,6 +84,8 @@ struct RenderState::State : public ResourceGL::State {
   bool uvTransformEnabled;
   vrb::Matrix uvTransform;
   std::string customFragmentShader;
+  uint16_t jointsCount;
+  float *jointMatrices;
 
   State()
       : program(0)
@@ -90,6 +95,7 @@ struct RenderState::State : public ResourceGL::State {
       , uModel(-1)
       , uUVTransform(-1)
       , uLightCount(-1)
+      , uJointMatrices(-1)
       , uMatterialAmbient(-1)
       , uMatterialDiffuse(-1)
       , uMatterialSpecular(-1)
@@ -100,14 +106,18 @@ struct RenderState::State : public ResourceGL::State {
       , aNormal(-1)
       , aUV(-1)
       , aColor(-1)
+      , aJointId(-1)
+      , aJointWeight(-1)
       , specularExponent(0.0f)
       , ambient(0.5f, 0.5f, 0.5f, 1.0f) // default to gray
       , diffuse(1.0f, 1.0f, 1.0f, 1.0f) // default to white
       , tintColor(1.0f, 1.0f, 1.0f, 1.0f)
       , lightId(0)
+      , jointsCount(0)
       , lightsEnabled(true)
       , uvTransformEnabled(false)
       , uvTransform(Matrix::Identity())
+      , jointMatrices(nullptr)
   {}
 
   void InitializeProgram();
@@ -168,6 +178,12 @@ RenderState::State::InitializeProgram() {
   if (program->SupportsFeatures(FeatureVertexColor)) {
     aColor = program->GetAttributeLocation("a_color");
   }
+
+  if(jointMatrices != nullptr && jointsCount > 0) {
+    aJointId = program->GetAttributeLocation("a_joint");
+    aJointWeight = program->GetAttributeLocation("a_jointWeight");
+    uJointMatrices = program->GetUniformLocation("u_jointMatrix");
+  }
   updateProgram = false;
 }
 
@@ -202,9 +218,24 @@ RenderState::AttributeColor() const {
   return m.aColor;
 }
 
+GLint
+RenderState::AttributeJoint() const {
+  return m.aJointId;
+}
+
+GLint
+RenderState::AttributeJointWeight() const {
+  return m.aJointWeight;
+}
+
 uint32_t
 RenderState::GetLightId() const {
   return m.lightId;
+}
+
+uint16_t
+RenderState::GetJointsCount() const {
+  return m.jointsCount;
 }
 
 void
@@ -235,6 +266,29 @@ RenderState::SetAmbient(const Color& aColor) {
 void
 RenderState::SetDiffuse(const Color& aColor) {
   m.diffuse = aColor;
+}
+void
+RenderState::SetJointsMatrices(const float *matrices) {
+  memcpy(m.jointMatrices, matrices, 16 * m.jointsCount * sizeof(float));
+}
+
+void
+RenderState::SetJointsCount(const uint16_t jointsCount) {
+  if (m.jointMatrices != nullptr) {
+    delete[] m.jointMatrices;
+  }
+  m.jointMatrices = new float[16 * jointsCount];
+  const float matrix[16] = {
+      1.000000, 0.000000, 0.000000, 0.000000,
+      0.000000, 1.000000, 0.000000, 0.000000,
+      0.000000, 0.000000, 1.000000, 0.000000,
+      0.000000, 0.000000, 0.000000, 1.000000
+  };
+  int stride = 16 * sizeof(float);
+  for (int i = 0; i < jointsCount; ++i) {
+    memcpy(m.jointMatrices + 16 * i, matrix, stride);
+  }
+  m.jointsCount = jointsCount;
 }
 
 void
@@ -315,6 +369,9 @@ RenderState::Enable(const Matrix& aPerspective, const Matrix& aView, const Matri
   if (m.uvTransformEnabled) {
     VRB_GL_CHECK(glUniformMatrix4fv(m.uUVTransform, 1, GL_FALSE, m.uvTransform.Data()));
   }
+  if (m.jointMatrices && m.jointsCount > 0 && m.uJointMatrices >= 0) {
+    VRB_GL_CHECK(glUniformMatrix4fv(m.uJointMatrices, m.jointsCount, GL_FALSE, m.jointMatrices));
+  }
   return true;
 }
 
@@ -345,6 +402,10 @@ RenderState::InitializeGL() {
 void
 RenderState::ShutdownGL() {
   m.updateProgram = true;
+  if (m.jointMatrices != nullptr) {
+    delete[] m.jointMatrices;
+    m.jointMatrices = nullptr;
+  }
 }
 
 } // namespace vrb

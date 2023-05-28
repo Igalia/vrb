@@ -27,6 +27,7 @@ public:
   void SetLoaderThread(LoaderThreadPtr aLoader);
   ProgramPtr CreateProgram(CreationContextPtr& aContext, const uint32_t aFeatureMask);
   ProgramPtr CreateProgram(CreationContextPtr& aContext, const uint32_t aFeatureMask, const std::string& aCustomFragShader);
+  ProgramPtr CreateProgram(CreationContextPtr& aContext, const uint32_t aFeatureMask, const std::string& aCustomFragShader, const uint16_t aJointsCount);
 protected:
   struct State;
   ProgramFactory(State& aState);

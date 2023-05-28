@@ -29,6 +29,10 @@ struct RenderBuffer::State {
   GLsizei uvLength = 0;
   size_t colorOffset = 0;
   GLsizei colorLength = 0;
+  size_t jointIdOffset = 0;
+  GLsizei jointIdLength = 0;
+  size_t jointWeightOffset = 0;
+  GLsizei jointWeightLength = 0;
 
   State() = default;
   ~State() = default;
@@ -47,8 +51,17 @@ struct RenderBuffer::State {
     return colorLength* sizeof(float);
   }
 
+  GLsizei JointIdSize() const {
+    return jointIdLength * sizeof(float);
+  }
+
+  GLsizei JointWeightSize() const {
+    return jointWeightLength * sizeof(float);
+  }
+
   GLsizei VertexSize() const {
-    return PositionSize() + NormalSize() + ColorSize() + UVSize();
+    return PositionSize() + NormalSize() + ColorSize() + UVSize() + JointIdSize() +
+        JointWeightSize();
   }
 };
 
@@ -170,6 +183,48 @@ RenderBuffer::ColorOffset() const {
 GLsizei
 RenderBuffer::ColorLength() const {
   return m.colorLength;
+}
+
+void
+RenderBuffer::DefineJointId(const size_t aOffset, const GLsizei aLength) {
+  m.jointIdOffset = aOffset;
+  m.jointIdLength = aLength;
+}
+
+void
+RenderBuffer::DefineJointWeight(const size_t aOffset, const GLsizei aLength) {
+  m.jointWeightOffset = aOffset;
+  m.jointWeightLength = aLength;
+}
+
+
+GLsizei
+RenderBuffer::JointIdLength() const {
+  return m.jointIdLength;
+}
+
+size_t
+RenderBuffer::JointIdOffset() const {
+  return m.jointIdOffset;
+}
+GLsizei
+RenderBuffer::JointWeightLength() const {
+  return m.jointWeightLength;
+}
+
+GLsizei
+RenderBuffer::JointIdSize() const {
+  return m.JointIdSize();
+}
+
+GLsizei
+RenderBuffer::JointWeightSize() const {
+  return m.JointWeightSize();
+}
+
+size_t
+RenderBuffer::JointWeightOffset() const {
+  return m.jointWeightOffset;
 }
 
 GLsizei

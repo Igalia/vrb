@@ -110,7 +110,7 @@ public:
   }
 
   float DotProduct(const Quaternion& aQuat) {
-    return this->x() * aQuat.x() + this->y() * aQuat.y() + this->z() * aQuat.z() + this->w() + aQuat.w();
+    return this->x() * aQuat.x() + this->y() * aQuat.y() + this->z() * aQuat.z() + this->w() * aQuat.w();
   }
 
   // SLERP: Spherical Linear Interpolation

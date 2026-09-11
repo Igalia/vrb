@@ -8,6 +8,7 @@ static const char* sVertexShaderSource = R"SHADER(
 #define VRB_UV_TYPE VRB_TEXTURE_UV_TYPE
 #define VRB_UV_TRANSFORM VRB_UV_TRANSFORM_ENABLED
 #define VRB_VERTEX_COLOR VRB_VERTEX_COLOR_ENABLED
+#define VRB_JOINTS VRB_JOINTS_COUNT
 
 struct Light {
   vec3 direction;
@@ -36,6 +37,12 @@ uniform mat4 u_uv_transform;
 
 attribute vec3 a_position;
 attribute vec3 a_normal;
+
+#if VRB_JOINTS != 0
+attribute vec4 a_joint;
+attribute vec4 a_jointWeight;
+uniform mat4 u_jointMatrix[VRB_JOINTS];
+#endif
 
 varying vec4 v_color;
 
@@ -93,7 +100,21 @@ void main(void) {
   v_uv = a_uv;
 #endif // VRB_UV_TRANSFORM
 #endif // VRB_USE_TEXTURE
-  gl_Position = u_perspective * u_view * u_model * vec4(a_position.xyz, 1);
+
+vec4 localVertex;
+
+#if VRB_JOINTS == 0
+  localVertex = vec4(a_position.xyz, 1.0);
+#else
+  mat4 localPose = mat4(0);
+  localPose += u_jointMatrix[int(a_joint.x)] * a_jointWeight.x;
+  localPose += u_jointMatrix[int(a_joint.y)] * a_jointWeight.y;
+  localPose += u_jointMatrix[int(a_joint.z)] * a_jointWeight.z;
+  localPose += u_jointMatrix[int(a_joint.w)] * a_jointWeight.w;
+  localVertex = localPose * vec4(a_position.xyz, 1.0);
+#endif // VRB_JOINTS
+
+  gl_Position = u_perspective * u_view * u_model * localVertex;
 }
 
 )SHADER";

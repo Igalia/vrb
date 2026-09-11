@@ -30,7 +30,8 @@ public:
   static ProgramBuilderPtr Create(LoaderThreadWeak aLoader);
 
   ProgramPtr GetProgram();
-  void SetFeatures(const uint32_t aFeatureMask, const std::string& aCustomFragShader);
+  void SetFeatures(const uint32_t aFeatureMask, const std::string &aCustomFragShader);
+  void SetJointsCount(const uint16_t aJointsCount);
   void Finalize();
 
   // ResourceGL Interface
@@ -54,8 +55,9 @@ struct ProgramBuilder::State : public ResourceGL::State {
   GLuint vertexShader;
   GLuint fragmentShader;
   GLuint programHandle;
+  GLuint jointsCount;
 
-  State() : program(Program::Create()), featureMask(0), vertexShader(0), fragmentShader(0), programHandle(0) {}
+  State() : program(Program::Create()), featureMask(0), vertexShader(0), fragmentShader(0), programHandle(0), jointsCount(0) {}
   bool IsTexturingEnabled() { return (featureMask & (FeatureTexture | FeatureCubeTexture | FeatureSurfaceTexture)) != 0; }
   bool IsCubeMapTextureEnabled() { return (featureMask & FeatureCubeTexture) != 0; }
   bool IsSurfaceTextureEnabled() { return (featureMask & FeatureSurfaceTexture) != 0;}
@@ -92,12 +94,16 @@ ProgramBuilder::GetProgram() {
 }
 
 void
-ProgramBuilder::SetFeatures(const uint32_t aFeatureMask, const std::string& aCustomFragShader) {
+ProgramBuilder::SetFeatures(const uint32_t aFeatureMask, const std::string &aCustomFragShader) {
   m.featureMask = aFeatureMask;
   m.customFragmentShader = aCustomFragShader;
   m.program->SetFeatures(aFeatureMask);
 }
 
+void
+ProgramBuilder::SetJointsCount(const uint16_t aJointsCount) {
+  m.jointsCount = aJointsCount;
+}
 
 void
 ProgramBuilder::Finalize() {
@@ -129,6 +135,12 @@ ProgramBuilder::InitializeGL() {
   const size_t kVertexColorStart = vertexShaderSource.find(kVertexColorMacro);
   if (kVertexColorStart != std::string::npos) {
     vertexShaderSource.replace(kVertexColorStart, kVertexColorMacro.length(), (m.featureMask & FeatureVertexColor) != 0 ? "1" : "0");
+  }
+
+  const std::string kJointMacro("VRB_JOINTS_COUNT");
+  const size_t kJointStart = vertexShaderSource.find(kJointMacro);
+  if (kJointStart != std::string::npos) {
+    vertexShaderSource.replace(kJointStart, kJointMacro.length(), std::to_string(m.jointsCount));
   }
 
   const std::string kTextureMacro("VRB_TEXTURE_STATE");
@@ -212,15 +224,20 @@ ProgramFactory::SetLoaderThread(LoaderThreadPtr aLoader) {
 }
 
 ProgramPtr
-ProgramFactory::CreateProgram(CreationContextPtr& aContext, uint32_t aFeatureMask) {
+ProgramFactory::CreateProgram(CreationContextPtr &aContext, uint32_t aFeatureMask) {
   static const std::string empty;
-  return CreateProgram(aContext, aFeatureMask, empty);
+  return CreateProgram(aContext, aFeatureMask, empty, 0);
 }
 
 ProgramPtr
-ProgramFactory::CreateProgram(CreationContextPtr& aContext, const uint32_t aFeatureMask,
-                              const std::string& aCustomFragShader) {
-  const std::string key = std::to_string(aFeatureMask) + aCustomFragShader;
+ProgramFactory::CreateProgram(CreationContextPtr &aContext, const uint32_t aFeatureMask,
+                              const std::string &aCustomFragShader) {
+  return CreateProgram(aContext, aFeatureMask, aCustomFragShader, 0);
+}
+ProgramPtr
+ProgramFactory::CreateProgram(CreationContextPtr &aContext, const uint32_t aFeatureMask,
+                              const std::string &aCustomFragShader, const uint16_t aJointsCount) {
+  const std::string key = std::to_string(aFeatureMask) + aCustomFragShader + std::to_string(aJointsCount);
   ProgramBuilderPtr builder;
   bool created = false;
   {
@@ -230,6 +247,7 @@ ProgramFactory::CreateProgram(CreationContextPtr& aContext, const uint32_t aFeat
     if (found == m.programs.end()) {
       builder = ProgramBuilder::Create(m.loader);
       builder->SetFeatures(aFeatureMask, aCustomFragShader);
+      builder->SetJointsCount(aJointsCount);
       m.programs[key] = builder;
       created = true;
     } else {

@@ -5,6 +5,7 @@
 
 #include "vrb/Color.h"
 #include "vrb/Vector.h"
+#include "vrb/Vector4.h"
 
 #include <limits>
 
@@ -31,6 +32,24 @@ Vector::Min() {
 const Vector&
 Vector::Max() {
   static const Vector result(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+  return result;
+}
+
+const Vector4&
+Vector4::Zero() {
+  static const Vector4 result;
+  return result;
+}
+
+const Vector4&
+Vector4::Min() {
+  static const Vector4 result(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+  return result;
+}
+
+const Vector4&
+Vector4::Max() {
+  static const Vector4 result(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
   return result;
 }
 

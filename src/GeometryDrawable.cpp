@@ -52,6 +52,7 @@ GeometryDrawable::Draw(const Camera& aCamera, const Matrix& aModelTransform) {
   if (m.renderState->Enable(aCamera.GetPerspective(), aCamera.GetView(), aModelTransform)) {
     const bool kUseTexture = m.UseTexture();
     const bool kUseColor = m.UseColor();
+    const bool kUseJoints = m.UseJoints();
     const GLsizei kSize = m.renderBuffer->VertexSize();
     m.renderBuffer->Bind();
 
@@ -64,6 +65,15 @@ GeometryDrawable::Draw(const Camera& aCamera, const Matrix& aModelTransform) {
       VRB_GL_CHECK(glVertexAttribPointer((GLuint)m.renderState->AttributeColor(), m.renderBuffer->ColorLength(), GL_FLOAT, GL_FALSE, kSize, (const GLvoid*)m.renderBuffer->ColorOffset()));
     }
 
+    if (kUseJoints && m.renderState->AttributeJoint() >= 0 ) {
+      VRB_GL_CHECK(glVertexAttribPointer((GLuint) m.renderState->AttributeJoint(),
+                                         m.renderBuffer->JointIdLength(), GL_FLOAT, GL_FALSE,
+                                         kSize, (const GLvoid*) m.renderBuffer->JointIdOffset()));
+      VRB_GL_CHECK(glVertexAttribPointer((GLuint) m.renderState->AttributeJointWeight(),
+                                         m.renderBuffer->JointWeightLength(), GL_FLOAT, GL_FALSE, kSize,
+                                         (const GLvoid*) m.renderBuffer->JointWeightOffset()));
+    }
+
     VRB_GL_CHECK(glEnableVertexAttribArray((GLuint)m.renderState->AttributePosition()));
     VRB_GL_CHECK(glEnableVertexAttribArray((GLuint)m.renderState->AttributeNormal()));
     if (kUseTexture) {
@@ -72,6 +82,11 @@ GeometryDrawable::Draw(const Camera& aCamera, const Matrix& aModelTransform) {
     if (kUseColor) {
       VRB_GL_CHECK(glEnableVertexAttribArray((GLuint)m.renderState->AttributeColor()));
     }
+    if (kUseJoints && m.renderState->AttributeJoint() >= 0 ) {
+      VRB_GL_CHECK(glEnableVertexAttribArray((GLuint) m.renderState->AttributeJoint()));
+      VRB_GL_CHECK(glEnableVertexAttribArray((GLuint) m.renderState->AttributeJointWeight()));
+    }
+
     const int32_t maxLength = m.renderBuffer->IndexCount();
     if (m.rangeLength == 0) {
       VRB_GL_CHECK(glDrawElements(GL_TRIANGLES, maxLength, GL_UNSIGNED_SHORT, 0));
@@ -87,6 +102,10 @@ GeometryDrawable::Draw(const Camera& aCamera, const Matrix& aModelTransform) {
     }
     if (kUseColor) {
       VRB_GL_CHECK(glDisableVertexAttribArray((GLuint)m.renderState->AttributeColor()));
+    }
+    if (kUseJoints && m.renderState->AttributeJoint() >= 0 ) {
+      VRB_GL_CHECK(glDisableVertexAttribArray((GLuint) m.renderState->AttributeJoint()));
+      VRB_GL_CHECK(glDisableVertexAttribArray((GLuint) m.renderState->AttributeJointWeight()));
     }
     m.renderBuffer->Unbind();
     m.renderState->Disable();

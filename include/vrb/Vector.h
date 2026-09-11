@@ -99,7 +99,7 @@ public:
   }
 
   bool operator==(const Vector& aVector) const {
-    return m.mX == aVector.m.mX && m.mY == aVector.m.mY && aVector.m.mZ == aVector.m.mZ;
+    return m.mX == aVector.m.mX && m.mY == aVector.m.mY && m.mZ == aVector.m.mZ;
   }
 
   float Magnitude() const {
